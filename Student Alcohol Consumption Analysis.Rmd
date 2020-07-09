@@ -1,0 +1,369 @@
+---
+title: "Student Alcohol Consumption Analysis"
+author: "*Shaleni Medikonda*"
+date: "*August 17, 2019*"
+output: html_document
+---
+
+
+# Introduction
+
+The [Student Alcohol Consumption](https://www.kaggle.com/uciml/student-alcohol-consumption) dataset contains information of a secondary school math students. It gives a detailed information about their age, gender, schedule, timings, their family background and their performance or grades. The original source of information is from [UCI, Machine Learning Repository](https://archive.ics.uci.edu/ml/datasets/STUDENT+ALCOHOL+CONSUMPTION).
+
+Alcohol Consumption is an addictive trait that could destroy careers of many. We have known this for a very long time now. Yet, the consumption of the same has always been increasing. A large new study published in *'The Lancet'* found that, global alcohol intake has increasaed by 70%. In such a scenario, wouldn't it be interesting to know how these alcohol consumption rates and other related factors are affecting grades of students right in the school?
+
+Gender differences have persisted for a very long time now. Every field has some difference to show between male and female. Similarly, with respect to amount of drinking, it is a known myth that boys consume far higher levels of alcohol than girls. Well, we could call it a myth in present day scenario. Hence, let stats prove this myth right or wrong precisely!
+
+Lets talk about parenting and other related factors, that could affect a child's performance in the school. Adolescence is a crucial period where children could be mould in the most beautiful way possible. Giving them right environment, freedom and resources is extremely necessary for their well-being and prosperity. But are all these morals really proven? The following analysis is an effort to find out major factors that drive a student's performance in school. This element is evaluated based on their final grade (**target variable**) received. 
+
+*Few variables crucial to the analysis are defined below:*
+
+* sex - Sex of the student
+  + Categorical variable (Female and Male)
+* age - Age of the student
+  + Continuous variable (in years)
+* address - Address of the student
+  + Categorical variable ('Urban' (U) or 'Rural' (R))
+* traveltime - Time to travel from home too school
+  + Continuous variable (in hours)
+  + 1 - <15min, 2 - 15-30min, 3 - 30min-1hr, 4 - >1hr
+* studytime - Time spent on study every week
+  + Continuous Variable (in hours)
+  + 1 - < 2hrs, 2 - 2-5hrs, 3 - 5-10hrs, 4 - >10hrs
+* failures - number of previous class failures
+  + Ordinal variable (between 0 and 4)
+* romantic - Relationship status of the student
+  + Categorical variable (yes or no)
+* famrel - Quality of family relationship
+  + Ordinal variable (from 1-very low to 5-very high)
+* goout -  How often does the student go out with his/her friends
+  + Ordinal variable (from 1-very low to 5-very high)
+* Dalc - Workday alcohol consumption 
+  + Ordinal variable (from 1-very low to 5-very high)
+* health - Current health status
+  + Ordinal variable (from 1-very low to 5-very high)
+* absences - Number of school absences
+  + Continuous variable (in days)
+* G3 - Final Grade
+  + Continuous variable (in points)
+
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+```
+
+**Loading necessary packages and importing the dataset:**
+
+
+```{r import&inspect, message=FALSE, warning=FALSE}
+
+library('tidyverse')
+library('plyr')
+library('dplyr')
+library('gridExtra')
+library('corrgram')
+library('factoextra')
+library('plotly')
+
+
+#importing the dataset
+data <- read.csv("F:/Data Analytics-MS!/Data Mining & applications/Week 2/student-alcohol-consumption/student-mat.csv")
+
+```
+
+
+# Feature Engineering
+
+*Finding total number of rows, columns and listing the variables in the dataset:*
+
+```{r initial, message=FALSE, warning=FALSE}
+
+#Counting the number of rows
+nrow(data)
+
+#Counting number of columns
+ncol(data)
+
+#sample data output
+head(data)
+
+#variables in the dataset
+str(data)
+
+# Finding missing values in all the columns
+data %>% is.na() %>% colSums()
+
+```
+
+**We see that thet dataset contains no missing values. Also, it has 33 columns, which would be extremely lengthy to process. Since our analysis is restricted to finding factors that influence the final grade or performance of the student, we inspect variables that are important and would be interesting to interpret to narrow our research.**
+
+School, higher education interest, schoolsup, paid, reason, father's job, mother's job are variables, that do not directly influence student's performance. For an effective analysis of these, further information like particular school type, parent's income, etc., matter, which aren't currently available. The following sections inspect and transform the variables used in this analysis.
+
+
+
+# Single Variable Plots
+
+```{r message=FALSE, warning=FALSE}
+
+
+layout(matrix(1:4, 2,2))
+
+hist(data$age, main="Histogram of age groups", xlab="Age")
+
+hist(data$traveltime, main = "Histogram of travel time", xlab = "Travel Time")
+
+
+hist(data$studytime, main = "Histogram of study time", xlab = "Study Time")
+
+hist(data$Medu, main = "Mother's Education", xlab = "Mother's Education")
+
+```
+
+
+
+```{r message=FALSE, warning=FALSE}
+
+layout(matrix(1:4,2,2))
+
+hist(data$Fedu, main = "Father's Education", xlab = "Father's Education")
+
+hist(data$absences, main = "Number of absences", xlab = "Number of absences to school")
+
+
+hist( data$Dalc, main = "Weekday Alcohol Consumption", xlab = "Weekday Alcohol Consumption")
+
+hist(data$Walc, main = "Weekend Alcohol Consumption", xlab = "Weekend Alcohol Consumption")
+
+ 
+```
+ 
+
+```{r eval=TRUE, message=FALSE, warning=FALSE}
+ 
+p10 <- data %>% ggplot(aes(x = sex)) +  geom_bar() + ggtitle("Gender")
+
+p11 <- data %>% ggplot(aes(x = address)) +  geom_bar()+ ggtitle("Rural and Urban ratio")
+
+p12 <- data %>% ggplot(aes(x = failures)) +  geom_bar() + ggtitle("Number of past Failures")
+#Transforming this variable with bins as high (having more than 2 failures) and low
+data$failures = ifelse(data$failures>2, "high", "low")
+t1 <- data %>% ggplot(aes(x = failures)) +  geom_bar() + ggtitle("Number of past Failures")
+grid.arrange(p12, t1, nrow=1)
+
+
+p13 <- data %>% ggplot(aes(x = romantic)) +  geom_bar() + ggtitle("Relationship Status")
+
+
+p14 <- data %>% ggplot(aes(x = goout)) +  geom_bar() + ggtitle("Frequency of students going out")
+
+
+
+p15 <- data %>% ggplot(aes(x = famrel)) +  geom_bar() + ggtitle("Family Relationship")
+#Transforming this variable with bins as good and bad
+data$famrel = ifelse(data$famrel>3, "good", "bad")
+t2 <- data %>% ggplot(aes(x = famrel)) +  geom_bar() + ggtitle("Family Relationship")
+grid.arrange(p15, t2, nrow=1)
+
+
+
+p16 <- data %>% ggplot(aes(x = guardian)) + geom_bar() + ggtitle("Guardian status")
+
+
+
+p6 <- data %>% ggplot(aes(x = Pstatus)) + geom_bar() + ggtitle("Parent's Cohabitation Status")
+
+
+#Viewing inspected variables
+plist <- list(p10, p11, p12, p13, p14, p15, p16, p6)
+grid.arrange(grobs = plist, ncol = 3)
+
+#Updating the dataset with only the necessary variables that could affect the target variable to limit our analysis
+data <- data %>% select(age, traveltime, studytime, Medu, Fedu, Dalc, Walc, sex, address, failures, romantic, goout, famrel, guardian, G3)
+
+
+```
+
+
+The age variable is neither skewed nor filled with unrealistic values. *We observe that there are many students between 15-18 years of age.*
+The travel time and study time are kept as numerical values since they are predictor variables. *We observe that for many students, the travel time is less than 15min. Also, we can infer that the study allotted by many students is between 2-5 hours.*
+*From the plots above, we could see that most of the mother's have a degree or simply put, have attended higher education.Surprisingly, it is observed that many father's just completed schooling, though an appreciable percent of them attended higher education. Also, nearly all the parents live together.*
+*From the absences variable plot, we observe that many students were regular to school. This data is too skewed to make a difference over the final grade or performance of the student.* Hence, it isn't necessary to consider 'absences' in the final model.
+*We observe that the weekday alcohol consumption is pretty low among majority of the students. On the other hand, weekend alcohol consumption is distributed. It is relatively high compared to weekday's alcohol consumption level. This makes perfect sense because we often don't see students drunk at school.*
+
+From the gender variable, we could see that there are *nearly equal number of girls and boys, with girls dominating by roughly 30 more.*
+
+The address variable tells us that most of the students come from Urban areas and approximately *less than 1/4th of the students stay at rural areas.*
+
+The failures variable divided as 0,1,2,3 is binned into low or high failures, with high failures indicating more than 2 failures. *It is clear that very few students have more than 2 failures in the past.*
+
+On examining the relationship status, we see that *1/3rd of the students are into a relationship.*
+
+*From the frequency of students going out, we find out that many students go out appreciable number of times. They do not completely stay home in their leisure hours.It can also be inferred that many students have good family relationships.*
+
+Finally, another good insight was that for many students, their *guardian was their mother. Very few had "Other" as their guardians.*
+
+
+
+
+**Updating the dataset**
+
+
+```{r dataset}
+
+#Updating the dataset with only the necessary variables that could affect the target variable to limit our analysis
+data <- data %>% select(age, traveltime, studytime, Medu, Fedu, Dalc, Walc, sex, address, failures, romantic, goout, famrel, guardian, G3)
+
+
+```
+
+
+
+
+
+# Multiple Variable Plots
+
+```{r exe,message=FALSE, warning=FALSE}
+
+#Checking Predictor Variables vs. Target Variables
+
+
+f1 <- ggplot(data, aes(x=age, y=G3, group = age)) + geom_point() + geom_boxplot() + geom_smooth(method = "lm", aes(group = 1)) + ggtitle("Age vs. G3")
+f2 <- ggplot(data, aes(x=traveltime, y=G3, group = traveltime)) + geom_point() + geom_boxplot() +  geom_smooth(method = "lm", aes(group = 1)) +ggtitle("Travel time vs. G3")
+f3 <- ggplot(data, aes(x=studytime, y=G3, group = studytime)) + geom_point() + geom_boxplot() + geom_smooth(method = "lm", aes(group = 1)) + ggtitle("Study time vs. G3")
+f6 <- ggplot(data, aes(x=Medu, y=G3, group = Medu)) + geom_point() + geom_boxplot() + geom_smooth(method = "lm", aes(group = 1)) + ggtitle("G3 vs. Mother's Education")
+f7 <- ggplot(data, aes(x=Fedu, y=G3, group = Fedu)) + geom_point() + geom_boxplot() + geom_smooth(method = "lm", aes(group = 1)) + ggtitle("Father's Education vs. G3")
+f8 <- ggplot(data, aes(x=Dalc, y=G3, group = Dalc)) + geom_point() + geom_boxplot() + geom_smooth(method = "lm", aes(group = 1)) + ggtitle("Daily Alcohol Intake vs. G3")
+f9 <- ggplot(data, aes(x=Walc, y=G3, group = Walc)) + geom_point() + geom_boxplot() + geom_smooth(method = "lm", aes(group = 1)) + ggtitle("Weekend Alcohol Intake vs. G3")
+f14 <- ggplot(data, aes(x=goout, y=G3, group = goout))+ geom_point() +  geom_boxplot() + geom_smooth(method = "lm", aes(group = 1)) +  ggtitle("Frequency of going out vs. G3")
+
+grid.arrange(f1, f2, f3, f6, f7, f8, f9, f14, nrow=3)
+
+
+f4 <- ggplot(data, aes(x=sex, y= G3))+ geom_boxplot()+ xlab("Sex")+ ylab("Final Grade")+ ggtitle("G3 vs. Sex")
+f5 <- ggplot(data, aes(x=address, y= G3))+ geom_boxplot()+ xlab("Address")+ ylab("Final Grade")+ ggtitle("G3 vs. Address")
+f10 <- ggplot(data, aes(x=failures, y= G3, group = failures))+ geom_boxplot()+ xlab("Past Failures")+ ylab("Final Grade")+ ggtitle("G3 vs. Past Failures")
+f11 <- ggplot(data, aes(x=romantic, y= G3))+ geom_boxplot()+ xlab("Relationship Status")+ ylab("Final Grade")+ ggtitle("G3 vs. Relationship Status")
+f12 <- ggplot(data, aes(x=guardian, y= G3))+ geom_boxplot()+ xlab("Guardian")+ ylab("Final Grade")+ ggtitle("G3 vs. Guardian")
+f13 <- ggplot(data, aes(x=famrel, y= G3, group = famrel))+ geom_boxplot()+ xlab("Family Relationship")+ ylab("Final Grade")+ ggtitle("G3 vs. Family Relationship")
+
+
+
+grid.arrange(f4, f5, f10, f11, f12, f13, nrow = 2)
+
+```
+
+
+*The plots above showed pretty good observations. We can understand that with an increase in travel time, alcohol consumption, be it weekday or weekend, frequency of going out and age, there is a decrease in the final grade of the students. The age factor is strange and interesting too. This particular insight is against general fact that students study better as they grow older. Well, the extent of this being true is unknown!!*
+
+Also, an obvious insight is that with an increase in study time, parent's education, there is an observed increase in final grade.
+
+**Few interesting things to note were that maximum score was obtained by students who weren't in a relationship. Guess the impact of a partner isn't going positive over the grades! Students with their mother as their guardian had attained lot better grades than others. As expected, a student with a proper family environment and low past failures, had a good final grade.**
+
+
+
+## Exploratory Data Analysis
+
+```{r EDA, message=FALSE, warning=FALSE}
+
+#Alcohol Consumption among male and female during Weekdays
+
+temp <- data %>% group_by(sex,Dalc) %>% summarise(n=n())
+
+ce <- ddply(temp, "sex", transform,
+percent = n / sum(n) * 100)
+ggplot(ce, aes(x=sex, y=percent, fill=Dalc)) +
+geom_bar(stat="identity")
+
+
+```
+
+
+**From the plot, we can infer that 80% of the girls had low weekday alcohol consumption rate compared to boys.**
+
+
+```{r EDA2, message=FALSE, warning=FALSE}
+
+#Alcohol Consumption among male and female during Weekends
+
+temp <- data %>% group_by(sex,Walc) %>% summarise(n=n())
+#temp$Walc <- as.factor(temp$Walc)
+
+ce <- ddply(temp, "sex", transform,
+percent = n / sum(n) * 100)
+ggplot(ce, aes(x=sex, y=percent, fill=Walc)) +
+geom_bar(stat="identity")
+
+```
+
+
+**Meanwhile looking at weekend alcohol consumption rate, it can be inferred that alcohol consumption was relatively double as that on a weekday.**
+
+**These plots prove the myth to be absoolutely right!! Girls indeed drink a lot less than all the boys out there! Good to know ain't it?**
+
+
+```{r EDA3, message=FALSE, warning=FALSE}
+
+#Frequency of going out and Final grades
+
+data %>% mutate(avg_grade=G3,goout=as.factor(goout)) %>% group_by(goout,sex) %>% summarise(grade=mean(avg_grade)) %>%
+  ggplot(aes(x=sex,y=grade,fill=goout))+geom_bar(stat="identity",position = "dodge")+ggtitle("Frequency of Going out and Grades")
+
+```
+
+**The plot above shows us that on a whole, boys go out frequently than girls and also, boys who rarely roam around have a better grade than girls in the same category.**
+
+
+```{r EDA4, message=FALSE, warning=FALSE}
+
+data %>% mutate(failures=as.factor(failures))%>% group_by(Medu,failures) %>% summarise(n=n()) %>%
+  ddply("Medu",transform,percent=n/sum(n)*100) %>%
+  ggplot(aes(x=Medu,y=percent,fill=failures))+
+  geom_bar(stat="identity")+ggtitle("Number of failures(%) and education level of the mother")
+
+```
+
+
+**This plot is pretty interesting on how the student failures is related to mother's education level. An obvious and clear conclusion is that, if a mother holds a higher degree, then there would be no failures or there would be a very low scope of student failures.**
+
+
+
+# Modeling
+
+
+## Linear Regression
+
+Our final linear model is built over the final grade, G3, and all the other influencing variables in the transformed dataset. 
+
+```{r Linear_Regression, message=FALSE, warning=FALSE}
+
+#Scaling the outcome variable
+data$G3 <- scale(data$G3) [, 1]
+
+#Applying Linear Regression to predict Final Grade
+model <- lm(data$G3 ~., data=data)
+summary(model)
+
+#Creating residual plots
+layout(matrix(1:4,2,2))
+par(mfrow=c(2,2))
+plot(model)
+
+
+```
+
+
+The regression coefficients show us that, mother's education, low failures, male gender and living in urban areas, are crucial for a good final grade. With a unit change in mother's education and failures, there would be 0.15 and 0.75 unit change in G3. With a unit change in sex-M and Address-U, there would be 0.25 and 0.19 unit change in G3. As discussed earlier, travel time, age, daily alcohol consumption, active relationship, frequently going out and having another guardian apart from the mother, would result in a decrease in the final grade or G3. *Strangely, weekend alcohol consumption rate is given a very low positive relationsip. This means that with every unit change in Walc, there is 0.06 increase in grade G3. This is one result that is generally not expected, be it due to any reasons possible!* 
+
+
+
+# Conclusion
+
+* Our basic goal was to find major factors that influenced the final grade of the students. We found that Medu, Failures-low, Sex-Male, and Address-Urban drove good grades.
+* We also pulled out many interesting insights about how staying a relationship affected grades, which population (male or female) had higher alcohol intake, and also about the extent of mother's education and family relationships influencing the student's final grade.
+* My major challenge was to clean the data and to narrow the analysis towards the right variables. Hopefully, I could draw convincingly good insights.
+* Given more time, I could project an elaborative study over how alcohol consumption affected grades among various age groups. Such results would be great to know!
+
+
+
